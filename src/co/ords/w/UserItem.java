@@ -501,8 +501,8 @@ public class UserItem implements java.lang.Comparable<UserItem> {
 	{
 		if(inc_this_access_token == null)
 			return false;
-		Calendar tempcal = Calendar.getInstance();
-		if(getThisAccessToken().equals(inc_this_access_token) && getThisAccessTokenExpires() >= tempcal.getTimeInMillis())
+		long now = System.currentTimeMillis();
+		if(getThisAccessToken().equals(inc_this_access_token) && getThisAccessTokenExpires() >= now)
 			return true;
 		else
 			return false;
