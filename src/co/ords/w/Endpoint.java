@@ -242,21 +242,21 @@ public class Endpoint extends HttpServlet {
 						 else // user had an email and this_access_token, but they were not valid. Let the frontend know to get rid of them
 						 {
 							 jsonresponse.put("response_status", "error");
-							 jsonresponse.put("message", "Invalid credentials. Please login and try again.");
+							 jsonresponse.put("message", "Invalid credentials. Please try again.");
 							 jsonresponse.put("error_code", "0000");
 						 }
 					 }
 					 else // couldn't get useritem from provided email
 					 {
 						 jsonresponse.put("response_status", "error");
-						 jsonresponse.put("message", "Invalid credentials. Please login and try again.");
+						 jsonresponse.put("message", "Invalid credentials. Please try again.");
 						 jsonresponse.put("error_code", "0000");
 					 }
 			 	}
 			 	else // either email or tat was null, but not both
 			 	{
 			 		jsonresponse.put("response_status", "error");
-			 		jsonresponse.put("message", "Invalid credentials. Please login and try again.");
+			 		jsonresponse.put("message", "Invalid credentials. Please try again.");
 			 		jsonresponse.put("error_code", "0000");
 			 	}
 			 }	
@@ -2616,24 +2616,24 @@ public class Endpoint extends HttpServlet {
 										 //System.out.println("Endpoint.savePicture() end");
 									 }
 								 }
-								 else // user had an email and this_access_token, but they were not valid. Let the frontend know to get rid of them
+								 else // user had an screenname and this_access_token, but they were not valid. Let the frontend know to get rid of them
 								 {
 									 jsonresponse.put("response_status", "error");
-									 jsonresponse.put("message", "Invalid credentials. Please login and try again.");
+									 jsonresponse.put("message", "screenname + access token present, but not valid. Please try again.");
 									 jsonresponse.put("error_code", "0000");
 								 }
 							 }
-							 else // couldn't get useritem from provided email
+							 else // couldn't get useritem from provided screenname
 							 {
 								 jsonresponse.put("response_status", "error");
-								 jsonresponse.put("message", "Invalid credentials. Please login and try again.");
+								 jsonresponse.put("message", "No user was found for that screenname. Please try again.");
 								 jsonresponse.put("error_code", "0000");
 							 }
 					 	}
-					 	else // either email or tat was null, but not both
+					 	else // either screenname or tat was null, but not both
 					 	{
 					 		jsonresponse.put("response_status", "error");
-					 		jsonresponse.put("message", "Invalid credentials. Please login and try again.");
+					 		jsonresponse.put("message", "screenname or access token was null. Please try again.");
 					 		jsonresponse.put("error_code", "0000");
 					 	}
 					 }	
