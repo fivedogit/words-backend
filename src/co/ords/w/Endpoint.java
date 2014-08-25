@@ -295,12 +295,12 @@ public class Endpoint extends HttpServlet {
 		JSONObject jsonresponse = new JSONObject();
 		long timestamp_at_entry = System.currentTimeMillis();
 		
-		try
+		try 
 		{
 			String method = request.getParameter("method");
 			if(!request.isSecure() && !(devel == true && request.getRemoteAddr().equals("127.0.0.1")))
 			{
-				jsonresponse.put("message", "The w.ords.co API endpoint must be communicated with securely.");
+				jsonresponse.put("message", "The w.ords.co API endpoi nt must be communicated with securely.");
 				jsonresponse.put("response_status", "error");
 			}
 			else if(method == null)
