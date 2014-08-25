@@ -1,0 +1,115 @@
+<html>
+<head>
+	<title>WORDS stats</title>
+	<link rel="icon" type="image/png" href="images/words_logo4_16.png" />
+	 <LINK href="css/jquery.jqplot.min.css" rel="stylesheet" type="text/css">
+    <script type="text/javascript" src="js/jquery-1.8.2.min.js"></script>
+    <script type="text/javascript" src="js/jquery.jqplot.min.js"></script>
+    <script type="text/javascript" src="js/jqplot.canvasTextRenderer.min.js"></script>
+    <script type="text/javascript" src="js/jqplot.canvasAxisLabelRenderer.min.js"></script>
+    <script type="text/javascript" src="js/jqplot.dateAxisRenderer.min.js"></script>
+    <link rel="chrome-webstore-item" href="https://chrome.google.com/webstore/detail/lgdfecngaioibcmfbfpeeddgkjfdpgij">
+    <script src="js/stats.js"></script>
+    <script type="text/javascript">
+    	$(document).ready(function(){
+    		$("#chrome_store_link").click( function(event) {
+    			event.preventDefault();
+				window.location = "https://chrome.google.com/webstore/detail/words/lgdfecngaioibcmfbfpeeddgkjfdpgij";	
+			});			
+		/*	$("#chrome_inline_link").click( function(event) {
+				event.preventDefault();
+				chrome.webstore.install();
+			});*/
+    	});
+    </script>
+         <style>
+        	body
+        	{ 
+         		font-family: arial, helvetica;
+        		font-size: 11px;
+         		border:0px solid;
+         	}
+         	div
+         	{
+         		padding:3px;
+         	}
+         	td
+         	{
+         		font-size:12px;
+         	}
+         	p.faqheader
+         	{
+         		font-weight:bold;
+         		font-size:14px;
+           	}
+         </style>      
+    </head>
+		
+<body style="text-align:center">	
+	<table style="margin-right:auto;margin-left:auto; width:auto">
+		<tr>
+			<td><a href="http://www.words4chrome.com/"><img src="images/words_logo_black_606x115.png" style="width:303px;height:58px"></a> </td>
+			<td rowspan=2 style="vertical-align:middle;text-align:middle;padding-left:50px">
+				<div><a href="#" id="chrome_store_link"><img src="images/chrome_web_store.png"></a></div>
+		<!-- 		<div><a href="#" id="chrome_inline_link"><img src="images/add_to_chrome.png"></a></div> -->
+			</td>
+		</tr>
+		<tr>
+			<td style="text-align:center">Smarter, safer web comments</a></td>
+		</tr>
+	</table>
+	<hr>
+	<div id="topdiv" style="padding:15px"><img src="images/ajaxSnake.gif"></div>
+	<!-- <div id="daysdiv"><input id="days_input" type="text" size=5><button id="days_button">submit</button></div> -->
+	<div id="main_div">
+		<div id="threadviews" style="width:1200px;height:600px; "></div>
+		<div id="threadretrievals" style="width:1200px;height:600px; "></div>
+		<div id="loggedinthreadviews" style="width:1200px;height:600px; "></div>
+		<div id="g_vs_fb" style="width:1200px;height:600px; "></div>
+		<!-- <div id="emptythreadviews" style="width:1200px;height:600px; "></div>	
+		<div id="separatedthreadviews" style="width:1200px;height:600px; "></div> -->
+		<div id="users" style="width:1200px;height:600px; "></div>
+		<h2>&#x25BC; This is the graph that triggers iPad giveaways &#x25BC;</h2>
+		<div id="giveawayeligible_users" style="width:1200px;height:600px; "></div>
+		<div id="users_comments" style="width:1200px;height:600px; "></div>
+		<div id="users_likes" style="width:1200px;height:600px; "></div>
+		<div id="users_dislikes" style="width:1200px;height:600px; "></div>
+		<div id="users_hosthpqsp" style="width:1200px;height:600px; "></div>
+		
+		<div id="sc-footer-facebookshare" style="width:1200px;height:600px; "></div>
+		<div id="sc-footer-twittershare" style="width:1200px;height:600px; "></div>
+		<div id="sc-footer-googleplusshare" style="width:1200px;height:600px; "></div>
+		<div id="sc-footer-tumblrshare" style="width:1200px;height:600px; "></div>
+		<div id="sc-footer-cws" style="width:1200px;height:600px; "></div>
+		<!-- <div id="sc-footer-operastore" style="width:1200px;height:600px; "></div>  
+	    <div id="sc-footer-coinbase2" style="width:1200px;height:600px; "></div>
+		<div id="sc-footer-coinbase5" style="width:1200px;height:600px; "></div>
+		<div id="sc-footer-coinbase10" style="width:1200px;height:600px; "></div>
+		<div id="sc-footer-coinbase20" style="width:1200px;height:600px; "></div>
+		<div id="sc-footer-coinbase50" style="width:1200px;height:600px; "></div>
+		<div id="sc-footer-coinbase100" style="width:1200px;height:600px; "></div>-->
+		
+		<div id="sc-about-facebookshare" style="width:1200px;height:600px; "></div>
+		<div id="sc-about-twittershare" style="width:1200px;height:600px; "></div>
+		<div id="sc-about-googleplusshare" style="width:1200px;height:600px; "></div>
+		<div id="sc-about-tumblrshare" style="width:1200px;height:600px; "></div>
+		<div id="sc-about-cws" style="width:1200px;height:600px; "></div>
+		<!-- <div id="sc-about-operastore" style="width:1200px;height:600px; "></div> 
+		<div id="sc-about-coinbase2" style="width:1200px;height:600px; "></div>
+		<div id="sc-about-coinbase5" style="width:1200px;height:600px; "></div>
+		<div id="sc-about-coinbase10" style="width:1200px;height:600px; "></div>
+		<div id="sc-about-coinbase20" style="width:1200px;height:600px; "></div>
+		<div id="sc-about-coinbase50" style="width:1200px;height:600px; "></div>
+		<div id="sc-about-coinbase100" style="width:1200px;height:600px; "></div> -->
+		
+		<div id="sc_footer_facebook_apppage" style="width:1200px;height:600px; "></div>
+		<div id="sc_footer_twitter_mainacct" style="width:1200px;height:600px; "></div>
+		
+		<div id="sc_about_twitter_mainacct" style="width:1200px;height:600px; "></div> 
+		<div id="sc_about_twitter_persacct" style="width:1200px;height:600px; "></div>
+		
+		
+		
+	</div>
+</body>
+</html>
