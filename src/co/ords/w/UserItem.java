@@ -29,7 +29,7 @@ import com.amazonaws.util.json.JSONArray;
 import com.amazonaws.util.json.JSONException;
 import com.amazonaws.util.json.JSONObject;
 
-@DynamoDBTable(tableName="words_users")
+@DynamoDBTable(tableName="words_users2")
 public class UserItem implements java.lang.Comparable<UserItem> {
 
 	// static parts of the database entry
@@ -39,8 +39,7 @@ public class UserItem implements java.lang.Comparable<UserItem> {
 	private String provisional_email;
 	private String provisional_email_confcode;
 	private long provisional_email_confcode_msfe;
-	private String screenname_lowercase;
-	private String screenname_authoritative;
+	private String screenname;
 	private String avatar_icon;
 	private String picture;
 	private long since;
@@ -107,9 +106,9 @@ public class UserItem implements java.lang.Comparable<UserItem> {
 	public String getId() {return id; }
 	public void setId(String id) { this.id = id; }
 	
-	@DynamoDBIndexHashKey(attributeName="screenname_lowercase", globalSecondaryIndexName="screenname_lowercase-index") // screenname is the hash key for screenname-email
-	public String getScreennameLowercase() {return screenname_lowercase; }
-	public void setScreennameLowercase(String screenname_lowercase) { this.screenname_lowercase = screenname_lowercase; }
+	@DynamoDBIndexHashKey(attributeName="screenname", globalSecondaryIndexName="screenname-index") // screenname is the hash key for screenname-email
+	public String getScreenname() {return screenname; }
+	public void setScreenname(String screenname) { this.screenname = screenname; }
 	
 	@DynamoDBIndexHashKey(attributeName="email", globalSecondaryIndexName="email-index") // email is the hash key for email-screenname
 	public String getEmail() { return email;}
@@ -118,10 +117,6 @@ public class UserItem implements java.lang.Comparable<UserItem> {
 	@DynamoDBAttribute(attributeName="email_is_confirmed")  
 	public boolean getEmailIsConfirmed() {return email_is_confirmed; }
 	public void setEmailIsConfirmed(boolean email_is_confirmed) { this.email_is_confirmed = email_is_confirmed; }
-	 
-	@DynamoDBAttribute(attributeName="screenname_authoritative")  
-	public String getScreennameLiteral() {return screenname_authoritative; }
-	public void setScreennameLiteral(String screenname_authoritative) { this.screenname_authoritative = screenname_authoritative; }
 	
 	@DynamoDBAttribute(attributeName="provisional_email")  
 	public String getProvisionalEmail() {return provisional_email; }
@@ -565,7 +560,7 @@ public class UserItem implements java.lang.Comparable<UserItem> {
 	{
 		JSONObject user_jo = new JSONObject();
 		try {
-			user_jo.put("screenname", getScreennameLiteral());
+			user_jo.put("screenname", getScreenname());
 			user_jo.put("picture", getPicture());
 			user_jo.put("last_login_type", getLastLoginType());
 			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z"); // return msfe values formatted like this. 
@@ -697,7 +692,7 @@ public class UserItem implements java.lang.Comparable<UserItem> {
 						if((useritem.getEmail().endsWith("@words4chrome.com") || useritem.getEmail().endsWith("@ords.co")) && !useritem.getPermissionLevel().equals("admin") && (useritem.getSince() < 1407163424000L))
 						{	
 							alt_jo = new JSONObject();
-							alt_jo.put("screenname", useritem.getScreennameLiteral());
+							alt_jo.put("screenname", useritem.getScreenname());
 							alt_jo.put("email", useritem.getEmail());
 							alt_jo.put("this_access_token", useritem.getThisAccessToken());
 							alts_ja.put(alt_jo);
@@ -905,8 +900,8 @@ public class UserItem implements java.lang.Comparable<UserItem> {
 	@DynamoDBIgnore
 	public int compareTo(UserItem o) // this makes more recent comments come first
 	{
-	    String otherscreenname = ((UserItem)o).getScreennameLowercase();
-	    int x = otherscreenname.compareTo(getScreennameLowercase());
+	    String otherscreenname = ((UserItem)o).getScreenname();
+	    int x = otherscreenname.compareTo(getScreenname());
 	    if(x >= 0) // this is to prevent equals
 	    	return 1;
 	    else

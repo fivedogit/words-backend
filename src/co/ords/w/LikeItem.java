@@ -69,7 +69,7 @@ public class LikeItem implements java.lang.Comparable<LikeItem> {
 			Timestamp ts = new Timestamp(getMSFE());
 			return_jo.put("time_ago", Global.agoIt(ts));
 			UserItem useritem = mapper.load( UserItem.class, getAuthorId(), dynamo_config);
-			return_jo.put("author_screenname", useritem.getScreennameLiteral());
+			return_jo.put("author_screenname", useritem.getScreenname());
 			return_jo.put("author_avatar_icon", useritem.getAvatarIcon());
 			return_jo.put("ip_address", getIPAddress());
 			return_jo.put("parent", getParent());

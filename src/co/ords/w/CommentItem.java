@@ -257,7 +257,7 @@ public class CommentItem implements java.lang.Comparable<CommentItem> {
 			{
 				return_jo.put("text", getText());
 				UserItem useritem = mapper.load( UserItem.class, this.getAuthorId(), dynamo_config);
-				return_jo.put("author_screenname", useritem.getScreennameLiteral());
+				return_jo.put("author_screenname", useritem.getScreenname());
 				return_jo.put("author_picture", useritem.getPicture());
 				return_jo.put("author_rating_in_window", useritem.getOrCalcRatingInWindow(mapper, dynamo_config, false)); // don't force calc of new rating
 				return_jo.put("author_rating", useritem.getRating()); // don't force calc of new rating

@@ -15,17 +15,15 @@ public class WordsMapper extends DynamoDBMapper {
 
 	public UserItem getUserItemFromScreenname(String screenname)
 	{
-		String screenname_lc = screenname.toLowerCase();
-
 		// set up an expression to query screename#id
         DynamoDBQueryExpression<UserItem> queryExpression = new DynamoDBQueryExpression<UserItem>()
-        		.withIndexName("screenname_lowercase-index")
+        		.withIndexName("screenname-index")
 				.withScanIndexForward(true)
 				.withConsistentRead(false);
         
         // set the parent part
         UserItem userkey = new UserItem();
-        userkey.setScreennameLowercase(screenname_lc);
+        userkey.setScreenname(screenname);
         queryExpression.setHashKeyValues(userkey);
 
 		// execute

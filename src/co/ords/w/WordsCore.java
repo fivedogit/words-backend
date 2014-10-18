@@ -494,8 +494,7 @@ public class WordsCore {
 				 String uuid_str = UUID.randomUUID().toString().replaceAll("-","");
 				 useritem.setId(uuid_str);
 				 useritem.setEmail(email.toLowerCase()); // always lowercase when storing emails in the database. ALWAYS
-				 useritem.setScreennameLiteral(screenname);
-				 useritem.setScreennameLowercase(screenname.toLowerCase());
+				 useritem.setScreenname(screenname);
 				 useritem.setLastIPAddress(ip_address);
 				 
 				 SHARight sr = new SHARight();
@@ -571,7 +570,7 @@ public class WordsCore {
 				 mapper.save(useritem); //***** COMMIT
 
 				 jsonresponse.put("response_status", "success");
-				 jsonresponse.put("screenname", useritem.getScreennameLiteral());
+				 jsonresponse.put("screenname", useritem.getScreenname());
 				 jsonresponse.put("this_access_token", this_access_token);
 				 jsonresponse.put("this_access_token_expires", this_access_token_expires);
 			}

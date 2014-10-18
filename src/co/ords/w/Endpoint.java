@@ -214,7 +214,7 @@ public class Endpoint extends HttpServlet {
 										
 										 if(throttle)
 										 {
-											 System.err.println("TODO: USER=" + useritem.getScreennameLiteral() + " IS TRYING TO WRITE TOO MANY COMMENTS TOO QUICKLY.");
+											 System.err.println("TODO: USER=" + useritem.getScreenname() + " IS TRYING TO WRITE TOO MANY COMMENTS TOO QUICKLY.");
 											 jsonresponse.put("response_status", "error");
 											 jsonresponse.put("message", "Rate limit surpassed. You are writing comments too quickly. Please curb your enthusiasm.");
 										 }
@@ -448,7 +448,7 @@ public class Endpoint extends HttpServlet {
 								 //System.out.println("Endpoint.loginWithGoogleOrShowRegistration() user already registered, logging in");
 								 jsonresponse.put("response_status", "success");
 								 jsonresponse.put("this_access_token", uuid_str);
-								 jsonresponse.put("screenname", useritem.getScreennameLiteral());
+								 jsonresponse.put("screenname", useritem.getScreenname());
 								 jsonresponse.put("show_registration", "false");
 								 jsonresponse.put("login_type", "words");
 							}
@@ -974,7 +974,7 @@ public class Endpoint extends HttpServlet {
 					 }
 					 else
 					 {
-						 UserItem u = mapper.getUserItemFromScreenname(screenname.toLowerCase());
+						 UserItem u = mapper.getUserItemFromScreenname(screenname);
 						 boolean screenname_is_available =  (u == null) ? true : false;
 						 if(screenname_is_available)
 						 {
@@ -1710,7 +1710,7 @@ public class Endpoint extends HttpServlet {
 												
 												 if(throttle)
 												 {
-													 System.err.println("TODO: USER=" + useritem.getScreennameLiteral() + " IS TRYING TO WRITE TOO MANY COMMENTS TOO QUICKLY.");
+													 System.err.println("TODO: USER=" + useritem.getScreenname() + " IS TRYING TO WRITE TOO MANY COMMENTS TOO QUICKLY.");
 													 jsonresponse.put("response_status", "error");
 													 jsonresponse.put("message", "Rate limit surpassed. You are writing comments too quickly. Please curb your enthusiasm.");
 												 }
@@ -2034,7 +2034,7 @@ public class Endpoint extends HttpServlet {
 											 }
 											 if(numin15 >= limit15 || numin30 >= limit30 || numin45 >= limit45 || numin60 >= limit60)
 											 {
-												 System.err.println("TODO: USER=" + useritem.getScreennameLiteral() + " IS TRYING TO LIKE/DISLIKE TOO MUCH STUFF.");
+												 System.err.println("TODO: USER=" + useritem.getScreenname() + " IS TRYING TO LIKE/DISLIKE TOO MUCH STUFF.");
 												 jsonresponse.put("response_status", "error");
 												 jsonresponse.put("message", "Rate limit surpassed. You are liking/disliking too much. Please curb your enthusiasm.");
 											 }
@@ -2137,7 +2137,7 @@ public class Endpoint extends HttpServlet {
 									 }
 									 else if (method.equals("getUserByScreenname")) // email, this_access_token, target_email (of user to get) // also an admin method
 									 {
-										 String target_screenname = request.getParameter("target_screenname").toLowerCase();
+										 String target_screenname = request.getParameter("target_screenname");
 										 if(target_screenname == null)
 										 {
 											 jsonresponse.put("message", "Error: target_screenname value was null.");
@@ -2153,7 +2153,7 @@ public class Endpoint extends HttpServlet {
 											 }
 											 else // at this point, querying user's email and screenname have been found and target screenname exists.
 											 {	
-												 if(useritem.getScreennameLowercase().equals(target_screenname)) // if getting self...
+												 if(useritem.getScreenname().equals(target_screenname)) // if getting self...
 												 {
 													 boolean get_email = true;
 													 boolean get_this_access_token = true; 
@@ -2371,7 +2371,7 @@ public class Endpoint extends HttpServlet {
 										 }
 										 else if(which.equals("facebook"))
 										 {
-											 System.out.println("noteSocialShare: seting shared to fb=true for screenname=" + useritem.getScreennameLowercase());
+											 System.out.println("noteSocialShare: seting shared to fb=true for screenname=" + useritem.getScreenname());
 											 useritem.setSharedToFacebook(true);
 											 mapper.save(useritem);
 											 jsonresponse.put("response_status", "success");
@@ -2379,7 +2379,7 @@ public class Endpoint extends HttpServlet {
 										 }
 										 else if(which.equals("twitter"))
 										 {
-											 System.out.println("noteSocialShare: seting shared to twitter=true for screenname=" + useritem.getScreennameLowercase());
+											 System.out.println("noteSocialShare: seting shared to twitter=true for screenname=" + useritem.getScreenname());
 											 useritem.setSharedToTwitter(true);
 											 mapper.save(useritem);
 											 jsonresponse.put("response_status", "success");
@@ -2470,10 +2470,10 @@ public class Endpoint extends HttpServlet {
 												 }
 												 else
 												 {	 
-													 String current_screenname = useritem.getScreennameLowercase();
+													 String current_screenname = useritem.getScreenname();
 													 if(!isValidScreenname(value))
 													 {	jsonresponse.put("response_status", "error"); jsonresponse.put("message", "Screenname is invalid. Must be 3-15 letters & digits, starting with a letter.");		}
-													 else if(value.toLowerCase().equals(current_screenname)) // lowercase to lowercase check
+													 else if(value.equals(current_screenname)) // lowercase to lowercase check
 													 {
 														 jsonresponse.put("response_status", "error"); jsonresponse.put("message", "Screenname must be different than your old one.");	
 													 }
@@ -2483,14 +2483,13 @@ public class Endpoint extends HttpServlet {
 													 }
 													 else
 													 {
-														 UserItem u = mapper.getUserItemFromScreenname(value.toLowerCase());
+														 UserItem u = mapper.getUserItemFromScreenname(value);
 														 boolean screenname_is_available =  (u == null) ? true : false;
 														 if(screenname_is_available)
 														 {
 															 if(useritem.getEmail().endsWith("@words4chrome.com")) // if this is a words4chrome address, it has to stay the same as the screenname(literal)
 																 useritem.setEmail(value + "@words4chrome.com");
-															 useritem.setScreennameLiteral(value);
-															 useritem.setScreennameLowercase(value.toLowerCase());
+															 useritem.setScreenname(value);
 															 mapper.save(useritem); 
 															 jsonresponse.put("response_status", "success"); 
 														 }
@@ -2747,7 +2746,7 @@ public class Endpoint extends HttpServlet {
 					 //System.out.println("Endpoint.loginWithGoogleOrShowRegistration() user already registered, logging in");
 					 jsonresponse.put("response_status", "success");
 					 jsonresponse.put("this_access_token", uuid_str);
-					 jsonresponse.put("screenname", useritem.getScreennameLiteral());
+					 jsonresponse.put("screenname", useritem.getScreenname());
 					 jsonresponse.put("show_registration", "false");
 					 jsonresponse.put("google_access_token", google_access_token);
 					 jsonresponse.put("login_type", "google");
@@ -2835,7 +2834,7 @@ public class Endpoint extends HttpServlet {
 					 //System.out.println("Endpoint.loginWithFacebookOrShowRegistration() user already registered, logging in");
 					 jsonresponse.put("response_status", "success");
 					 jsonresponse.put("this_access_token", uuid_str);
-					 jsonresponse.put("screenname", useritem.getScreennameLiteral());
+					 jsonresponse.put("screenname", useritem.getScreenname());
 					 jsonresponse.put("show_registration", "false");
 					 jsonresponse.put("facebook_access_token", facebook_access_token);
 					 jsonresponse.put("login_type", "facebook");
