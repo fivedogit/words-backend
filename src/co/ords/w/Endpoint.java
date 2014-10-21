@@ -3,8 +3,14 @@ package co.ords.w;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.io.Reader;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.URLEncoder;
 import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -23,6 +29,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.xml.crypto.Data;
 
 import org.apache.commons.validator.routines.EmailValidator;
 import org.apache.http.HttpResponse;
@@ -36,6 +43,8 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
+import org.jsoup.Connection.Response;
+import org.jsoup.Jsoup;
 
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.PropertiesCredentials;
@@ -56,7 +65,7 @@ public class Endpoint extends HttpServlet {
 	private AmazonDynamoDBClient client;
 	private WordsMapper mapper;
 	private DynamoDBMapperConfig dynamo_config;
-	private boolean devel = false;
+	private boolean devel = true;
 	GlobalvarItem imp_source_categories_gvi = null; // would otherwise be polled on every new impression
 	GlobalvarItem imp_targets_gvi = null; // would otherwise be polled on every new impression
 	
@@ -311,16 +320,91 @@ public class Endpoint extends HttpServlet {
 			else
 			{
 				/***
-				 *     ___________ _____ _____ _____  ___   _        ___  _   _ _____ _   _ 
-				 *    /  ___| ___ \  ___/  __ \_   _|/ _ \ | |      / _ \| | | |_   _| | | |
-				 *    \ `--.| |_/ / |__ | /  \/ | | / /_\ \| |     / /_\ \ | | | | | | |_| |
-				 *     `--. \  __/|  __|| |     | | |  _  || |     |  _  | | | | | | |  _  |
-				 *    /\__/ / |   | |___| \__/\_| |_| | | || |____ | | | | |_| | | | | | | |
-				 *    \____/\_|   \____/ \____/\___/\_| |_/\_____/ \_| |_/\___/  \_/ \_| |_/
-				 *                                                                          
-				 *                                                                          
+				 *     _   _ _____ _   _         ___  _   _ _____ _   _  ___  ___ _____ _____ _   _ ___________  _____ 
+				 *    | \ | |  _  | \ | |       / _ \| | | |_   _| | | | |  \/  ||  ___|_   _| | | |  _  |  _  \/  ___|
+				 *    |  \| | | | |  \| |______/ /_\ \ | | | | | | |_| | | .  . || |__   | | | |_| | | | | | | |\ `--. 
+				 *    | . ` | | | | . ` |______|  _  | | | | | | |  _  | | |\/| ||  __|  | | |  _  | | | | | | | `--. \
+				 *    | |\  \ \_/ / |\  |      | | | | |_| | | | | | | | | |  | || |___  | | | | | \ \_/ / |/ / /\__/ /
+				 *    \_| \_/\___/\_| \_/      \_| |_/\___/  \_/ \_| |_/ \_|  |_/\____/  \_/ \_| |_/\___/|___/  \____/ 
 				 */
-				if (method.equals("getMetricData")) // this allows admin to validate with FB secret for viewing metrics
+				if(method.equals("searchForHNItem"))
+				{
+					 String url_str = request.getParameter("url");
+					 String result = Jsoup
+							 .connect("https://hn.algolia.com/api/v1/search").data("query", url_str).data("tags","story")
+							 .userAgent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/38.0.2125.104 Safari/537.36")
+							 .ignoreContentType(true).execute().body();
+					 jsonresponse.put("response_status", "success");
+					 jsonresponse.put("result", new JSONObject(result));
+				}
+				else if(method.equals("getHNAuthToken"))
+				{
+					String screenname = request.getParameter("screenname");
+					if(screenname == null || screenname.isEmpty())
+					{
+						jsonresponse.put("message", "Screenname was null or empty.");
+						jsonresponse.put("response_status", "error");
+					}
+					else
+					{
+						UserTokenItem uti = new UserTokenItem();
+						uti.setScreenname(screenname);
+						String uuid = UUID.randomUUID().toString().replaceAll("-","");
+						uti.setToken(uuid);
+						mapper.save(uti);
+						jsonresponse.put("response_status", "success");
+						jsonresponse.put("token", uuid);
+					}
+				}
+				else if(method.equals("verifyHNUser"))
+				{
+					String screenname = request.getParameter("screenname");
+					if(screenname == null || screenname.isEmpty())
+					{
+						jsonresponse.put("message", "Screenname was null or empty.");
+						jsonresponse.put("response_status", "error");
+					}
+					else
+					{
+						UserTokenItem uti = mapper.load(UserTokenItem.class, screenname, dynamo_config);
+						String stored_uuid = uti.getToken();
+						String result = Jsoup
+								 .connect("https://hacker-news.firebaseio.com/v0/" + screenname + "/")
+								 .userAgent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/38.0.2125.104 Safari/537.36")
+								 .ignoreContentType(true).execute().body();
+						String checked_uuid = new JSONObject(result).getString("about");
+						if(stored_uuid.equals(checked_uuid))
+						{
+							String uuid_str = UUID.randomUUID().toString().replaceAll("-","");
+							Calendar cal = Calendar.getInstance();
+							long now = cal.getTimeInMillis();
+							cal.add(Calendar.YEAR, 1);
+							long future = cal.getTimeInMillis();
+							UserItem useritem = mapper.getUserItemFromScreenname(screenname);
+							useritem.setThisAccessToken(uuid_str);
+							useritem.setThisAccessTokenExpires(future);
+							useritem.setLastLoginType("hn");
+							useritem.setSeen(now);
+							SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z");
+							sdf.setTimeZone(TimeZone.getTimeZone("America/New_York"));
+							useritem.setSeenHumanReadable(sdf.format(cal.getTimeInMillis()));
+							mapper.save(useritem);
+							
+							//System.out.println("Endpoint.loginWithGoogleOrShowRegistration() user already registered, logging in");
+							jsonresponse.put("response_status", "success");
+							jsonresponse.put("verified", true);
+							jsonresponse.put("this_access_token", uuid_str);
+							jsonresponse.put("screenname", useritem.getScreenname());
+						}
+						else
+						{
+							jsonresponse.put("response_status", "success");
+							jsonresponse.put("verified", false);
+						}
+						mapper.delete(uti);
+					}
+				}
+				else if (method.equals("getMetricData")) // this allows admin to validate with FB secret for viewing metrics
 				{
 					GlobalvarItem metrics_msfe_gvi = mapper.load(GlobalvarItem.class, "metrics_msfe", dynamo_config);
 					GlobalvarItem metrics_ttl_secs_gvi = mapper.load(GlobalvarItem.class, "metrics_ttl_secs", dynamo_config); // does not change programmatically
@@ -367,14 +451,6 @@ public class Endpoint extends HttpServlet {
 					}
 					//System.out.println("Endpoint.getMetricData(): end");
 				}
-				/***
-				 *     _   _ _____ _   _         ___  _   _ _____ _   _  ___  ___ _____ _____ _   _ ___________  _____ 
-				 *    | \ | |  _  | \ | |       / _ \| | | |_   _| | | | |  \/  ||  ___|_   _| | | |  _  |  _  \/  ___|
-				 *    |  \| | | | |  \| |______/ /_\ \ | | | | | | |_| | | .  . || |__   | | | |_| | | | | | | |\ `--. 
-				 *    | . ` | | | | . ` |______|  _  | | | | | | |  _  | | |\/| ||  __|  | | |  _  | | | | | | | `--. \
-				 *    | |\  \ \_/ / |\  |      | | | | |_| | | | | | | | | |  | || |___  | | | | | \ \_/ / |/ / /\__/ /
-				 *    \_| \_/\___/\_| \_/      \_| |_/\___/  \_/ \_| |_/ \_|  |_/\____/  \_/ \_| |_/\___/|___/  \____/ 
-				 */
 				else if(method.equals("getProgressToNextGiveaway"))
 				{
 					GlobalvarItem num_eligible_users_gvi = mapper.load(GlobalvarItem.class, "num_eligible_users", dynamo_config);
