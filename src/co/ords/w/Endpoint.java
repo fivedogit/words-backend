@@ -65,7 +65,7 @@ public class Endpoint extends HttpServlet {
 	private AmazonDynamoDBClient client;
 	private WordsMapper mapper;
 	private DynamoDBMapperConfig dynamo_config;
-	private boolean devel = true;
+	private boolean devel = false;
 	GlobalvarItem imp_source_categories_gvi = null; // would otherwise be polled on every new impression
 	GlobalvarItem imp_targets_gvi = null; // would otherwise be polled on every new impression
 	
@@ -368,38 +368,108 @@ public class Endpoint extends HttpServlet {
 					{
 						UserTokenItem uti = mapper.load(UserTokenItem.class, screenname, dynamo_config);
 						String stored_uuid = uti.getToken();
-						String result = Jsoup
-								 .connect("https://hacker-news.firebaseio.com/v0/" + screenname + "/")
-								 .userAgent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/38.0.2125.104 Safari/537.36")
-								 .ignoreContentType(true).execute().body();
-						String checked_uuid = new JSONObject(result).getString("about");
-						if(stored_uuid.equals(checked_uuid))
+						
+						int x = 0;
+						String result = "";
+						String about = "";
+						String checked_uuid = "";
+						int bi = 0;
+						int ei = 0;
+						int limit = 6;
+						String hn_karma_str = "0";
+						String hn_since_str = "0";
+						//int hn_karma = 0;
+						JSONObject hn_user_jo = null;
+						while(x < limit)
 						{
-							String uuid_str = UUID.randomUUID().toString().replaceAll("-","");
-							Calendar cal = Calendar.getInstance();
-							long now = cal.getTimeInMillis();
-							cal.add(Calendar.YEAR, 1);
-							long future = cal.getTimeInMillis();
-							UserItem useritem = mapper.getUserItemFromScreenname(screenname);
-							useritem.setThisAccessToken(uuid_str);
-							useritem.setThisAccessTokenExpires(future);
-							useritem.setLastLoginType("hn");
-							useritem.setSeen(now);
-							SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z");
-							sdf.setTimeZone(TimeZone.getTimeZone("America/New_York"));
-							useritem.setSeenHumanReadable(sdf.format(cal.getTimeInMillis()));
-							mapper.save(useritem);
-							
-							//System.out.println("Endpoint.loginWithGoogleOrShowRegistration() user already registered, logging in");
-							jsonresponse.put("response_status", "success");
-							jsonresponse.put("verified", true);
-							jsonresponse.put("this_access_token", uuid_str);
-							jsonresponse.put("screenname", useritem.getScreenname());
+							result = Jsoup
+									 .connect("https://hacker-news.firebaseio.com/v0/user/" + screenname  + ".json")
+									 .userAgent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/38.0.2125.104 Safari/537.36")
+									 .ignoreContentType(true).execute().body();
+							System.out.println("Endpoint.verifyHNUser():" + result);
+							hn_user_jo = new JSONObject(result);
+							about = hn_user_jo.getString("about");
+							bi = about.indexOf("BEGINTOKEN|");
+							if(bi != -1)                                   // entering here means the loop WILL break 1 of 3 ways: No |ENDTOKEN, match or no match.
+							{
+								ei = about.indexOf("|ENDTOKEN");
+								if(ei == -1)
+								{
+									jsonresponse.put("response_status", "error");
+									jsonresponse.put("message", "Found \"BEGINTOKEN|\" but not \"|ENDTOKEN\"");
+									break;
+								}
+								else
+								{
+									checked_uuid = about.substring(bi + 11, ei);
+									if(checked_uuid.equals(stored_uuid))
+									{	
+										String uuid_str = UUID.randomUUID().toString().replaceAll("-","");
+										Calendar cal = Calendar.getInstance();
+										long now = cal.getTimeInMillis();
+										cal.add(Calendar.YEAR, 1);
+										long future = cal.getTimeInMillis();
+										UserItem useritem = mapper.getUserItemFromScreenname(screenname);
+										useritem.setThisAccessToken(uuid_str);
+										useritem.setThisAccessTokenExpires(future);
+										useritem.setLastLoginType("hn");
+										if(hn_user_jo.has("karma")) 
+										{	
+											hn_karma_str = hn_user_jo.getString("karma");
+											if(Global.isWholeNumeric(hn_karma_str))
+												useritem.setHNKarma(Integer.parseInt(hn_karma_str));
+											else
+												useritem.setHNKarma(0); // if "karma" is somehow not a whole integer, set to 0
+										}
+										else
+											useritem.setHNKarma(0); // if "karma" is somehow missing, set to 0
+										if(hn_user_jo.has("created")) 
+										{	
+											hn_since_str = hn_user_jo.getString("created");
+											if(Global.isWholeNumeric(hn_since_str))
+												useritem.setHNSince(Integer.parseInt(hn_since_str));
+											else
+												useritem.setHNSince(0); // if "karma" is somehow not a whole integer, set to 0
+										}
+										else
+											useritem.setHNSince(0); // if "karma" is somehow missing, set to 0
+										useritem.setSeen(now);
+										SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z");
+										sdf.setTimeZone(TimeZone.getTimeZone("America/New_York"));
+										useritem.setSeenHumanReadable(sdf.format(cal.getTimeInMillis()));
+										mapper.save(useritem);
+										
+										//System.out.println("Endpoint.loginWithGoogleOrShowRegistration() user already registered, logging in");
+										jsonresponse.put("response_status", "success");
+										
+										jsonresponse.put("verified", true);
+										jsonresponse.put("this_access_token", uuid_str);
+										jsonresponse.put("screenname", useritem.getScreenname());
+										break;
+									}
+									else
+									{
+										jsonresponse.put("response_status", "error");
+										jsonresponse.put("message", "Found \"BEGINTOKEN|\" and \"|ENDTOKEN\" but they did not match.");
+										break;
+									}
+								}
+							}
+							else
+							{
+								try {
+									java.lang.Thread.sleep(5000);
+								} catch (InterruptedException e) {
+									// TODO Auto-generated catch block
+									e.printStackTrace();
+								}
+								x++;
+							}
 						}
-						else
+						if(x == limit)
 						{
-							jsonresponse.put("response_status", "success");
-							jsonresponse.put("verified", false);
+							jsonresponse.put("response_status", "error");
+							jsonresponse.put("message", "Checked " + limit + " times and didn't find \"BEGINTOKEN|\"");
 						}
 						mapper.delete(uti);
 					}
@@ -2238,6 +2308,7 @@ public class Endpoint extends HttpServlet {
 													 boolean get_notification_count = true;
 													 boolean get_seen = true;
 													 jsonresponse.put("target_user_jo", targetuseritem.getAsJSONObject(get_email, get_this_access_token, get_activity_ids, get_email_preferences, get_notification_count, get_seen, client, mapper, dynamo_config)); // get stripped-down version
+													 jsonresponse.put("self_response", true);
 												 }
 												 else
 												 {
@@ -2248,6 +2319,7 @@ public class Endpoint extends HttpServlet {
 													 boolean get_notification_count = false;
 													 boolean get_seen = false;
 													 jsonresponse.put("target_user_jo", targetuseritem.getAsJSONObject(get_email, get_this_access_token, get_activity_ids, get_email_preferences, get_notification_count, get_seen, client, mapper, dynamo_config)); // get stripped-down version
+													 jsonresponse.put("self_response", false);
 												 }
 											 }
 										 }

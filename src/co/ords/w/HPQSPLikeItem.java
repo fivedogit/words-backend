@@ -9,7 +9,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 
-@DynamoDBTable(tableName="words_hpqsplikes") 
+@DynamoDBTable(tableName="words_hpqsplikes2") 
 public class HPQSPLikeItem  implements java.lang.Comparable<HPQSPLikeItem> {
 
 	private String hpqsp;
@@ -25,7 +25,7 @@ public class HPQSPLikeItem  implements java.lang.Comparable<HPQSPLikeItem> {
 	public String getId() {return id; }
 	public void setId(String id) { this.id = id; }
 	
-	@DynamoDBIndexHashKey( globalSecondaryIndexName="author_id-hpqsp-index", attributeName="author_id") 
+	@DynamoDBIndexHashKey( globalSecondaryIndexNames={"author_id-hpqsp-index","author_id-msfe-index"}, attributeName="author_id") 
 	public String getAuthorId() {return author_id; }
 	public void setAuthorId(String author_id) { this.author_id = author_id; }
 	
@@ -47,7 +47,7 @@ public class HPQSPLikeItem  implements java.lang.Comparable<HPQSPLikeItem> {
 	public void setURLWhenCreated(String url_when_created) { this.url_when_created = url_when_created; }
 	
 	@DynamoDBAttribute(attributeName="msfe")  
-	@DynamoDBIndexRangeKey(attributeName="msfe", globalSecondaryIndexNames={"hpqsp-msfe-index", "hostname-msfe-index"}) 
+	@DynamoDBIndexRangeKey(attributeName="msfe", globalSecondaryIndexNames={"hpqsp-msfe-index", "hostname-msfe-index", "author_id-msfe-index"}) 
 	public long getMSFE() {return msfe; }
 	public void setMSFE(long msfe) { this.msfe = msfe; }
 	

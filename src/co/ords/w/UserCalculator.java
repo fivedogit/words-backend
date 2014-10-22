@@ -87,14 +87,22 @@ public class UserCalculator extends java.lang.Thread {
 		int num_comments_authored_in_window = 0;
 		int num_likes_authored_in_window = 0;
 		int num_dislikes_authored_in_window = 0;
+		int num_hostnamelikes_authored_in_window = 0;
+		int num_hpqsplikes_authored_in_window = 0;
 		
 		// set number of likes/dislikes in window. Comments authored in window will be counted below.
 		TreeSet<DislikeItem> ds = useritem.getDislikesAuthored((int)rating_window_mins, mapper, dynamo_config);
-		TreeSet<LikeItem> ls = useritem.getLikesAuthored((int)rating_window_mins, mapper, dynamo_config);
 		if(ds != null)
 			num_dislikes_authored_in_window = ds.size();
+		TreeSet<LikeItem> ls = useritem.getLikesAuthored((int)rating_window_mins, mapper, dynamo_config);
 		if(ls != null)
 			num_likes_authored_in_window = ls.size();
+		TreeSet<HostnameLikeItem> hostnamelikesset = useritem.getHostnameLikesAuthored((int)rating_window_mins, mapper, dynamo_config);
+		if(hostnamelikesset != null)
+			num_hostnamelikes_authored_in_window = hostnamelikesset.size();
+		TreeSet<HPQSPLikeItem> hpqsplikesset = useritem.getHPQSPLikesAuthored((int)rating_window_mins, mapper, dynamo_config);
+		if(hpqsplikesset != null)
+			num_hpqsplikes_authored_in_window = hpqsplikesset.size();
 		
 		/***
 		 *      ___   _      _     
@@ -113,18 +121,24 @@ public class UserCalculator extends java.lang.Thread {
 		int num_comments_authored = 0;
 		int num_likes_authored = 0;
 		int num_dislikes_authored = 0;
+		int num_hostnamelikes_authored = 0;
+		int num_hpqsplikes_authored = 0;
 		
 		TreeSet<CommentItem> c = useritem.getCommentsAuthored(0, mapper, dynamo_config);
 		TreeSet<DislikeItem> d = useritem.getDislikesAuthored(0, mapper, dynamo_config);
 		TreeSet<LikeItem> l = useritem.getLikesAuthored(0, mapper, dynamo_config);
+		TreeSet<HostnameLikeItem> hostnamelikes_authored = useritem.getHostnameLikesAuthored(0, mapper, dynamo_config);
+		TreeSet<HPQSPLikeItem> hpsqplikes_authored = useritem.getHPQSPLikesAuthored(0, mapper, dynamo_config);
 		if(c != null)
 			num_comments_authored = c.size();
 		if(d != null)
 			num_dislikes_authored = d.size();
 		if(l != null)
 			num_likes_authored = l.size();
-		useritem.setNumLikesAuthored(num_likes_authored);
-		useritem.setNumDislikesAuthored(num_dislikes_authored);
+		if(hostnamelikes_authored != null)
+			num_hostnamelikes_authored = hostnamelikes_authored.size();
+		if(hpsqplikes_authored != null)
+			num_hpqsplikes_authored = hpsqplikes_authored.size();
 		
 		int cumulative_likes = 0;
 		int cumulative_dislikes = 0;
@@ -276,6 +290,12 @@ public class UserCalculator extends java.lang.Thread {
 		
 		useritem.setNumDislikesAuthored(num_dislikes_authored);
 		useritem.setNumDislikesAuthoredInWindow(num_dislikes_authored_in_window);
+		
+		useritem.setNumHostnameLikesAuthored(num_hostnamelikes_authored);
+		useritem.setNumHostnameLikesAuthoredInWindow(num_hostnamelikes_authored_in_window);
+		
+		useritem.setNumHPQSPLikesAuthored(num_hpqsplikes_authored);
+		useritem.setNumHPQSPLikesAuthoredInWindow(num_hpqsplikes_authored_in_window);
 		
 		useritem.setRatingTS(System.currentTimeMillis()); //
 		mapper.save(useritem);

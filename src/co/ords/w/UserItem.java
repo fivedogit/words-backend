@@ -84,9 +84,13 @@ public class UserItem implements java.lang.Comparable<UserItem> {
 	private int num_likes_authored; // populated asynchronously via UserCalculator
 	private int num_dislikes_authored; // populated asynchronously via UserCalculator
 	private int num_comments_authored; // populated asynchronously via UserCalculator
+	private int num_hostnamelikes_authored; // populated asynchronously via UserCalculator
+	private int num_hpqsplikes_authored; // populated asynchronously via UserCalculator
 	private int num_likes_authored_in_window; // populated asynchronously via UserCalculator
 	private int num_dislikes_authored_in_window; // populated asynchronously via UserCalculator
 	private int num_comments_authored_in_window; // populated asynchronously via UserCalculator
+	private int num_hostnamelikes_authored_in_window;
+	private int num_hpqsplikes_authored_in_window;
 	private String salt;
 	private String encrypted_password;
 	private String temp_plaintext_password;
@@ -96,11 +100,15 @@ public class UserItem implements java.lang.Comparable<UserItem> {
 	private String password_reset_confcode;
 	private long password_reset_confcode_msfe;
 	private String last_ip_address;
+	private int hn_karma;
+	private long hn_since;
 	
 	// dynamic parts (not in the database entry itself). NOTE: these can differ based on window size (or no window at all)
 	private TreeSet<CommentItem> comments_authored;
 	private TreeSet<LikeItem> likes_authored;
 	private TreeSet<DislikeItem> dislikes_authored;
+	private TreeSet<HostnameLikeItem> hostnamelikes_authored;
+	private TreeSet<HPQSPLikeItem> hpqsplikes_authored;
 
 	@DynamoDBHashKey(attributeName="id") 
 	public String getId() {return id; }
@@ -145,6 +153,10 @@ public class UserItem implements java.lang.Comparable<UserItem> {
 	@DynamoDBAttribute(attributeName="since")  
 	public long getSince() {return since; }
 	public void setSince(long since) { this.since = since; }
+	
+	@DynamoDBAttribute(attributeName="hn_since")  
+	public long getHNSince() {return hn_since; }
+	public void setHNSince(long hn_since) { this.hn_since = hn_since; }
 	
 	@DynamoDBAttribute(attributeName="seen")  
 	public long getSeen() {return seen; }
@@ -309,6 +321,14 @@ public class UserItem implements java.lang.Comparable<UserItem> {
 	public int getNumCommentsAuthoredInWindow() { return num_comments_authored_in_window; }
 	public void setNumCommentsAuthoredInWindow(int num_comments_authored_in_window) { this.num_comments_authored_in_window = num_comments_authored_in_window; }
 	
+	@DynamoDBAttribute(attributeName="num_hostnamelikes_authored_in_window")  
+	public int getNumHostnameLikesAuthoredInWindow() { return num_hostnamelikes_authored_in_window; }
+	public void setNumHostnameLikesAuthoredInWindow(int num_hostnamelikes_authored_in_window) { this.num_hostnamelikes_authored_in_window = num_hostnamelikes_authored_in_window; }
+	
+	@DynamoDBAttribute(attributeName="num_hpqsplikes_authored_in_window")  
+	public int getNumHPQSPLikesAuthoredInWindow() { return num_hpqsplikes_authored_in_window; }
+	public void setNumHPQSPLikesAuthoredInWindow(int num_hpqsplikes_authored_in_window) { this.num_hpqsplikes_authored_in_window = num_hpqsplikes_authored_in_window; }
+	
 	@DynamoDBAttribute(attributeName="num_likes_authored")  
 	public int getNumLikesAuthored() { return num_likes_authored; }
 	public void setNumLikesAuthored(int num_likes_authored) { this.num_likes_authored = num_likes_authored; }
@@ -320,6 +340,14 @@ public class UserItem implements java.lang.Comparable<UserItem> {
 	@DynamoDBAttribute(attributeName="num_comments_authored")  
 	public int getNumCommentsAuthored() { return num_comments_authored; }
 	public void setNumCommentsAuthored(int num_comments_authored) { this.num_comments_authored = num_comments_authored; }
+	
+	@DynamoDBAttribute(attributeName="num_hostnamelikes_authored")  
+	public int getNumHostnameLikesAuthored() { return num_hostnamelikes_authored; }
+	public void setNumHostnameLikesAuthored(int num_hostnamelikes_authored) { this.num_hostnamelikes_authored = num_hostnamelikes_authored; }
+	
+	@DynamoDBAttribute(attributeName="num_hpqsplikes_authored")  
+	public int getNumHPQSPLikesAuthored() { return num_hpqsplikes_authored; }
+	public void setNumHPQSPLikesAuthored(int num_hpqsplikes_authored) { this.num_hpqsplikes_authored = num_hpqsplikes_authored; }
 	
 	@DynamoDBAttribute(attributeName="salt")  
 	public String getSalt() {return salt; }  
@@ -357,6 +385,10 @@ public class UserItem implements java.lang.Comparable<UserItem> {
 	@DynamoDBAttribute(attributeName="last_ip_address")  
 	public String getLastIPAddress() {return last_ip_address; }  
 	public void setLastIPAddress(String last_ip_address) { this.last_ip_address = last_ip_address; }
+	
+	@DynamoDBAttribute(attributeName="hn_karma")  
+	public int getHNKarma() { return hn_karma; }
+	public void setHNKarma(int hn_karma) { this.hn_karma = hn_karma; }
 	
 	@DynamoDBIgnore
 	public boolean isCurrentPassword(String password_to_test)
@@ -491,6 +523,87 @@ public class UserItem implements java.lang.Comparable<UserItem> {
 		return dislikes_authored;
 	}
 	
+	
+	@DynamoDBIgnore
+	public TreeSet<HostnameLikeItem> getHostnameLikesAuthored(int minutes_ago, WordsMapper mapper, DynamoDBMapperConfig dynamo_config) { 
+		// set up an expression to query screename#id
+        DynamoDBQueryExpression<HostnameLikeItem> queryExpression = new DynamoDBQueryExpression<HostnameLikeItem>()
+				.withIndexName("author_id-msfe-index")
+				.withScanIndexForward(true)
+				.withConsistentRead(false);
+        
+        // set the screenname part
+        HostnameLikeItem hostnamelikeKey = new HostnameLikeItem();
+        hostnamelikeKey.setAuthorId(getId());
+        queryExpression.setHashKeyValues(hostnamelikeKey);
+        
+        // set the msfe range part
+        if(minutes_ago > 0)
+        {
+        	//System.out.println("Getting dislikes authored with a valid cutoff time.");
+        	Calendar cal = Calendar.getInstance();
+        	cal.add(Calendar.MINUTE, (minutes_ago * -1));
+        	long msfe_cutoff = cal.getTimeInMillis();
+	        // set the msfe range part
+	        Map<String, Condition> keyConditions = new HashMap<String, Condition>();
+	    	keyConditions.put("msfe",new Condition()
+	    	.withComparisonOperator(ComparisonOperator.GT)
+			.withAttributeValueList(new AttributeValue().withN(new Long(msfe_cutoff).toString())));
+			queryExpression.setRangeKeyConditions(keyConditions);
+        }
+
+		// execute
+        List<HostnameLikeItem> hostnamelikeitems = mapper.query(HostnameLikeItem.class, queryExpression, dynamo_config);
+        if(hostnamelikeitems != null && hostnamelikeitems.size() > 0)
+        	hostnamelikes_authored = new TreeSet<HostnameLikeItem>();
+        for (HostnameLikeItem hostnamelikeitem : hostnamelikeitems) {
+            //System.out.format("Parent=%s, Id=%s",
+            //       dislikeitem.getParent(), dislikeitem.getId());
+        	hostnamelikes_authored.add(hostnamelikeitem);
+        }
+		return hostnamelikes_authored;
+	}
+	
+	@DynamoDBIgnore
+	public TreeSet<HPQSPLikeItem> getHPQSPLikesAuthored(int minutes_ago, WordsMapper mapper, DynamoDBMapperConfig dynamo_config) { 
+		// set up an expression to query screename#id
+        DynamoDBQueryExpression<HPQSPLikeItem> queryExpression = new DynamoDBQueryExpression<HPQSPLikeItem>()
+				.withIndexName("author_id-msfe-index")
+				.withScanIndexForward(true)
+				.withConsistentRead(false);
+        
+        // set the screenname part
+        HPQSPLikeItem hpqsplikeKey = new HPQSPLikeItem();
+        hpqsplikeKey.setAuthorId(getId());
+        queryExpression.setHashKeyValues(hpqsplikeKey);
+        
+        // set the msfe range part
+        if(minutes_ago > 0)
+        {
+        	//System.out.println("Getting dislikes authored with a valid cutoff time.");
+        	Calendar cal = Calendar.getInstance();
+        	cal.add(Calendar.MINUTE, (minutes_ago * -1));
+        	long msfe_cutoff = cal.getTimeInMillis();
+	        // set the msfe range part
+	        Map<String, Condition> keyConditions = new HashMap<String, Condition>();
+	    	keyConditions.put("msfe",new Condition()
+	    	.withComparisonOperator(ComparisonOperator.GT)
+			.withAttributeValueList(new AttributeValue().withN(new Long(msfe_cutoff).toString())));
+			queryExpression.setRangeKeyConditions(keyConditions);
+        }
+
+		// execute
+        List<HPQSPLikeItem> hpqsplikeitems = mapper.query(HPQSPLikeItem.class, queryExpression, dynamo_config);
+        if(hpqsplikeitems != null && hpqsplikeitems.size() > 0)
+        	hpqsplikes_authored = new TreeSet<HPQSPLikeItem>();
+        for (HPQSPLikeItem hpqsplikeitem : hpqsplikeitems) {
+            //System.out.format("Parent=%s, Id=%s",
+            //       dislikeitem.getParent(), dislikeitem.getId());
+        	hpqsplikes_authored.add(hpqsplikeitem);
+        }
+		return hpqsplikes_authored;
+	}
+	
 	@DynamoDBIgnore
 	public boolean isValid(String inc_this_access_token)
 	{
@@ -574,9 +687,12 @@ public class UserItem implements java.lang.Comparable<UserItem> {
 			user_jo.put("num_dislikes_authored_in_window", getNumDislikesAuthoredInWindow());
 			user_jo.put("num_comments_authored_in_window", getNumCommentsAuthoredInWindow());
 			
-			user_jo.put("since", sdf.format(getSince()));
+			user_jo.put("since", getSince());
+			user_jo.put("since_hr", sdf.format(getSince()));
 			user_jo.put("overlay_size", getOverlaySize());
 			
+			user_jo.put("hn_karma", getHNKarma());
+			user_jo.put("hn_since", getHNSince());
 			if(get_email) 
 			{
 				int giveaway_entries = 0;

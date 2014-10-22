@@ -9,7 +9,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 
-@DynamoDBTable(tableName="words_hostnamelikes") 
+@DynamoDBTable(tableName="words_hostnamelikes2") 
 public class HostnameLikeItem implements java.lang.Comparable<HostnameLikeItem> {
 
 	private String hostname;
@@ -22,7 +22,7 @@ public class HostnameLikeItem implements java.lang.Comparable<HostnameLikeItem> 
 	public String getId() {return id; }
 	public void setId(String id) { this.id = id; }
 	
-	@DynamoDBIndexHashKey( globalSecondaryIndexName="author_id-hostname-index", attributeName="author_id") 
+	@DynamoDBIndexHashKey( globalSecondaryIndexNames={"author_id-hostname-index","author_id-msfe-index"}, attributeName="author_id") 
 	public String getAuthorId() {return author_id; }
 	public void setAuthorId(String author_id) { this.author_id = author_id; }
 	
@@ -32,7 +32,7 @@ public class HostnameLikeItem implements java.lang.Comparable<HostnameLikeItem> 
 	public void setHostname(String hostname) { this.hostname = hostname; }
 	
 	@DynamoDBAttribute(attributeName="msfe")  
-	@DynamoDBIndexRangeKey(attributeName="msfe", globalSecondaryIndexName="hostname-msfe-index") 
+	@DynamoDBIndexRangeKey(attributeName="msfe", globalSecondaryIndexNames={"hostname-msfe-index","author_id-msfe-index"}) 
 	public long getMSFE() {return msfe; }
 	public void setMSFE(long msfe) { this.msfe = msfe; }
 	
