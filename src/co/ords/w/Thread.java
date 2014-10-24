@@ -55,7 +55,8 @@ public class Thread {
 	private boolean valid;
 	private WordsMapper mapper;
 	private DynamoDBMapperConfig dynamo_config;
-
+	private long numlikes = 0; // hostname or hpqsp likes
+	
 	// NOTE: assumes a valid url and valid channel
 	public Thread(String inc_url, WordsMapper inc_mapper, DynamoDBMapperConfig inc_dynamo_config)
 	{
@@ -101,12 +102,13 @@ public class Thread {
 		{
 			//System.out.println("Thread(): couldn't find hostname for url: "+inc_url+" standardized:" + Global.getStandardizedHostnameFromURL(inc_url));
 			hpqsps = null;
+			numlikes = 0L;
 			return;
 		}
 		else 
 		{
 			/* Here, we are looking for all the "HPQSPS" that make up the "Thread". 
-			 * For separated, it's just one HPQSPS
+			 * For separated, it's just one HPQSP
 			 * For combined, it's all the HPQSPS underneath a Hostname
 			 */
 			//System.out.println("Thread(): Found hostname: " + Global.getStandardizedHostnameFromURL(inc_url));
@@ -121,6 +123,7 @@ public class Thread {
 				if(onlyhpitem == null)
 				{
 					// this hostname item has no hps. This is fine. 
+					numlikes = 0L;
 				}
 				else if(onlyhpitem != null) 
 				{
@@ -130,6 +133,7 @@ public class Thread {
 					hpqsps = onlyhpitem.getRelevantHPQSPs(inc_url, mapper, dynamo_config);
 				}
 				
+				//is this right? Why are we looping? Shouldn't it just be one hpqsp?
 				if(hpqsps != null) 
 				{
 					//System.out.println("Thread(): hpqsps was not null. Does it have comments?");
@@ -160,6 +164,7 @@ public class Thread {
 				hpqsps = hostnameitem.getHPQSPs(mapper, dynamo_config);
 				allcomments = hostnameitem.getAllComments(525949, mapper, dynamo_config); // one year in minutes
 				toplevelcomments = null;
+				numlikes = hostnameitem.getNumberOfHostnameLikes(hostnameitem.getHostname(), 0, mapper, dynamo_config);
 				// loop through all comments and build toplevelcomments treeset
 				if(allcomments != null)
 				{	
@@ -366,6 +371,7 @@ public class Thread {
 				master_comment_array = getTopLevelCommentIds(); // just return the comment ids, no children, no fluff
 				jsonresponse.put("children", master_comment_array);
 				JSONObject tempjo = getTopAndBottom();
+				jsonresponse.put("numcomments", allcomments.size());
 				jsonresponse.put("top", tempjo.getString("top"));
 				jsonresponse.put("bottom", tempjo.getString("bottom"));
 			}

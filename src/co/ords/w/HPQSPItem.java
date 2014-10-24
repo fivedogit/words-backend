@@ -181,6 +181,43 @@ public class HPQSPItem implements java.lang.Comparable<HPQSPItem> {
 		}
 	}
 
+	@DynamoDBIgnore // this somewhat duplicates the above function, but is faster since we're not trying to get all the comments, just a count.
+	public int getNumHPQSPLikes(int minutes_ago, WordsMapper mapper, DynamoDBMapperConfig dynamo_config) 
+	{ 
+		// set up an expression to query screename#id
+        DynamoDBQueryExpression<HPQSPLikeItem> queryExpression = new DynamoDBQueryExpression<HPQSPLikeItem>()
+        		.withIndexName("hpqsp-msfe-index")
+				.withScanIndexForward(true)
+				.withConsistentRead(false);
+        
+        // set the parent part
+        HPQSPLikeItem hpqsp_likeKey = new HPQSPLikeItem();
+        hpqsp_likeKey.setHPQSP(getHPQSP());
+        queryExpression.setHashKeyValues(hpqsp_likeKey);
+        
+        // set the msfe range part
+        if(minutes_ago > 0) // 0 means get ALL, regardless of time
+        {
+        	//System.out.println("Getting hpqsp_like children with a valid cutoff time.");
+        	Calendar cal = Calendar.getInstance();
+        	cal.add(Calendar.MINUTE, (minutes_ago * -1));
+        	long msfe_cutoff = cal.getTimeInMillis();
+	        // set the msfe range part
+	        Map<String, Condition> keyConditions = new HashMap<String, Condition>();
+	    	keyConditions.put("msfe",new Condition()
+	    	.withComparisonOperator(ComparisonOperator.GT)
+			.withAttributeValueList(new AttributeValue().withN(new Long(msfe_cutoff).toString())));
+			queryExpression.setRangeKeyConditions(keyConditions);
+        }
+
+		// execute
+        List<HPQSPLikeItem> items = mapper.query(HPQSPLikeItem.class, queryExpression, dynamo_config);
+        if(items != null && items.size() > 0)
+        	return items.size();
+        else
+        	return 0;
+	}
+	
 	@DynamoDBIgnore
 	public int compareTo(HPQSPItem o) // this makes more recent comments come first
 	{

@@ -65,7 +65,7 @@ public class Endpoint extends HttpServlet {
 	private AmazonDynamoDBClient client;
 	private WordsMapper mapper;
 	private DynamoDBMapperConfig dynamo_config;
-	private boolean devel = false;
+	private boolean devel = true;
 	GlobalvarItem imp_source_categories_gvi = null; // would otherwise be polled on every new impression
 	GlobalvarItem imp_targets_gvi = null; // would otherwise be polled on every new impression
 	

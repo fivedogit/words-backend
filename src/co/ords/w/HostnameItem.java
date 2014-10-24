@@ -153,24 +153,28 @@ public class HostnameItem implements java.lang.Comparable<HostnameItem> {
 			return comments;
 		}
 	}
-	
-	  public long getNumberOfHostnameLikes(String hostname_str, int minutes_ago, WordsMapper mapper, DynamoDBMapperConfig dynamo_config)
-	  {
-			// set up an expression to query screename#id
+
+	@DynamoDBIgnore
+	public TreeSet<HostnameLikeItem> getHostnameLikes(int minutes_ago, WordsMapper mapper, DynamoDBMapperConfig dynamo_config) {  // gets all HostnameLikeItems attached to this Hostname, used for comment retrieval on combined hostnames
+		if(hostname_likes != null) // already populated
+			return hostname_likes;
+		else
+		{	
+			// set up an expression to query hostname + msfe (all)
 	        DynamoDBQueryExpression<HostnameLikeItem> queryExpression = new DynamoDBQueryExpression<HostnameLikeItem>()
 	        		.withIndexName("hostname-msfe-index")
 					.withScanIndexForward(true)
 					.withConsistentRead(false);
 	        
-	        // set the parent part
-	        HostnameLikeItem hostnameKey = new HostnameLikeItem();
-	        hostnameKey.setHostname(hostname_str);
-	        queryExpression.setHashKeyValues(hostnameKey);
-	        
+	        // set the hostname part
+	        HostnameLikeItem hostnamelike_key = new HostnameLikeItem();
+	        hostnamelike_key.setHostname(getHostname());
+	        queryExpression.setHashKeyValues(hostnamelike_key);
+
 	        // set the msfe range part
 	        if(minutes_ago > 0)
 	        {
-	        	//System.out.println("Getting hostname likes with a valid cutoff time.");
+	        	//System.out.println("Getting hostnamelikes with a valid cutoff time.");
 	        	Calendar cal = Calendar.getInstance();
 	        	cal.add(Calendar.MINUTE, (minutes_ago * -1));
 	        	long msfe_cutoff = cal.getTimeInMillis();
@@ -181,61 +185,57 @@ public class HostnameItem implements java.lang.Comparable<HostnameItem> {
 				.withAttributeValueList(new AttributeValue().withN(new Long(msfe_cutoff).toString())));
 				queryExpression.setRangeKeyConditions(keyConditions);
 	        }
-
+	        
 			// execute
 	        List<HostnameLikeItem> items = mapper.query(HostnameLikeItem.class, queryExpression, dynamo_config);
 	        if(items != null && items.size() > 0)
-	        	return items.size();
-	        else
-	        	return 0;
-			
-	  }
-	
-	  @DynamoDBIgnore
-	  public TreeSet<HostnameLikeItem> getHostnameLikes(int minutes_ago, WordsMapper mapper, DynamoDBMapperConfig dynamo_config) {  // gets all HostnameLikeItems attached to this Hostname, used for comment retrieval on combined hostnames
-			if(hostname_likes != null) // already populated
-				return hostname_likes;
-			else
-			{	
-				// set up an expression to query hostname + msfe (all)
-		        DynamoDBQueryExpression<HostnameLikeItem> queryExpression = new DynamoDBQueryExpression<HostnameLikeItem>()
-		        		.withIndexName("hostname-msfe-index")
-						.withScanIndexForward(true)
-						.withConsistentRead(false);
-		        
-		        // set the hostname part
-		        HostnameLikeItem hostnamelike_key = new HostnameLikeItem();
-		        hostnamelike_key.setHostname(getHostname());
-		        queryExpression.setHashKeyValues(hostnamelike_key);
+	        {
+	        	hostname_likes = new TreeSet<HostnameLikeItem>();
+	        }
+	        for (HostnameLikeItem item : items) {
+	        	hostname_likes.add(item);
+	        }
+				
+			return hostname_likes;
+		}
+	}  
+  
+	@DynamoDBIgnore // this somewhat duplicates the above function, but is faster since we're not trying to get all the comments, just a count.
+	public long getNumberOfHostnameLikes(String hostname_str, int minutes_ago, WordsMapper mapper, DynamoDBMapperConfig dynamo_config)
+	{
+		// set up an expression to query screename#id
+		DynamoDBQueryExpression<HostnameLikeItem> queryExpression = new DynamoDBQueryExpression<HostnameLikeItem>()
+        		.withIndexName("hostname-msfe-index")
+				.withScanIndexForward(true)
+				.withConsistentRead(false);
+        
+        // set the parent part
+        HostnameLikeItem hostnameKey = new HostnameLikeItem();
+        hostnameKey.setHostname(hostname_str);
+        queryExpression.setHashKeyValues(hostnameKey);
+        
+        // set the msfe range part
+        if(minutes_ago > 0) // 0 means get ALL, regardless of time
+        {
+        	//System.out.println("Getting hostname likes with a valid cutoff time.");
+        	Calendar cal = Calendar.getInstance();
+        	cal.add(Calendar.MINUTE, (minutes_ago * -1));
+        	long msfe_cutoff = cal.getTimeInMillis();
+	        // set the msfe range part
+	        Map<String, Condition> keyConditions = new HashMap<String, Condition>();
+	    	keyConditions.put("msfe",new Condition()
+	    	.withComparisonOperator(ComparisonOperator.GT)
+			.withAttributeValueList(new AttributeValue().withN(new Long(msfe_cutoff).toString())));
+			queryExpression.setRangeKeyConditions(keyConditions);
+        }
 
-		        // set the msfe range part
-		        if(minutes_ago > 0)
-		        {
-		        	//System.out.println("Getting hostnamelikes with a valid cutoff time.");
-		        	Calendar cal = Calendar.getInstance();
-		        	cal.add(Calendar.MINUTE, (minutes_ago * -1));
-		        	long msfe_cutoff = cal.getTimeInMillis();
-			        // set the msfe range part
-			        Map<String, Condition> keyConditions = new HashMap<String, Condition>();
-			    	keyConditions.put("msfe",new Condition()
-			    	.withComparisonOperator(ComparisonOperator.GT)
-					.withAttributeValueList(new AttributeValue().withN(new Long(msfe_cutoff).toString())));
-					queryExpression.setRangeKeyConditions(keyConditions);
-		        }
-		        
-				// execute
-		        List<HostnameLikeItem> items = mapper.query(HostnameLikeItem.class, queryExpression, dynamo_config);
-		        if(items != null && items.size() > 0)
-		        {
-		        	hostname_likes = new TreeSet<HostnameLikeItem>();
-		        }
-		        for (HostnameLikeItem item : items) {
-		        	hostname_likes.add(item);
-		        }
-					
-				return hostname_likes;
-			}
-		}  
+		// execute
+        List<HostnameLikeItem> items = mapper.query(HostnameLikeItem.class, queryExpression, dynamo_config);
+        if(items != null && items.size() > 0)
+        	return items.size();
+        else
+        	return 0;
+	}  
 	  
 	@DynamoDBIgnore
 	public TreeSet<HPQSPLikeItem> getHPQSPLikes(int minutes_ago, WordsMapper mapper, DynamoDBMapperConfig dynamo_config) {  // gets all HPQSPLikeItems attached to this Hostname, used for comment retrieval on combined hostnames
