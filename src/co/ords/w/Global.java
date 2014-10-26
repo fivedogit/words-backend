@@ -243,7 +243,7 @@ public class Global {
 		}
 		else
 		{
-			return hpitem.getHPQSPAccordingToThisHP(inc_url);
+			return hpitem.getHPQSPStringAccordingToThisHP(inc_url);
 		}
 	}
 	

@@ -4,7 +4,6 @@ package co.ords.w;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.StringTokenizer;
@@ -14,8 +13,6 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 
 @DynamoDBTable(tableName="words_hps")
@@ -28,7 +25,7 @@ public class HPItem implements java.lang.Comparable<HPItem> {
 	private String original_url; // always standardized
 
 	// dynamic parts (not in the database entry itself)
-	private TreeSet<HPQSPItem> hpqsps; // this is ALL of the hpqsps. 
+	//private TreeSet<HPQSPItem> hpqsps; // this is ALL of the hpqsps which can be gotten with a query against the secondary index. Not sure it's needed, though.
 
 	@DynamoDBHashKey(attributeName="hp") 
 	public String getHP() {return hp; }
@@ -46,83 +43,9 @@ public class HPItem implements java.lang.Comparable<HPItem> {
 	public Set<String> getSignificantQSPs() {return significant_qsps; }
 	public void setSignificantQSPs(Set<String> significant_qsps) { this.significant_qsps = significant_qsps; }
 
-	@DynamoDBIgnore
-	public TreeSet<HPQSPItem> getHPQSPs(WordsMapper mapper, DynamoDBMapperConfig dynamo_config) {  // gets all HPQSPs attached to this HPItem
-		if(hpqsps != null) // already populated
-			return hpqsps;
-		else
-		{	
-			// set up an expression to query hp + hpqsp (all)
-	        DynamoDBQueryExpression<HPQSPItem> queryExpression = new DynamoDBQueryExpression<HPQSPItem>()
-	        		.withIndexName("hp-index")
-					.withScanIndexForward(true)
-					.withConsistentRead(false);
-
-	        // set the hp part
-	        HPQSPItem hpqsp_key = new HPQSPItem();
-	        hpqsp_key.setHP(getHP());
-	        queryExpression.setHashKeyValues(hpqsp_key);
-
-			// execute
-	        List<HPQSPItem> hpqspitems = mapper.query(HPQSPItem.class, queryExpression, dynamo_config);
-	        if(hpqspitems != null && hpqspitems.size() > 0)
-	        	hpqsps = new TreeSet<HPQSPItem>();
-	        for (HPQSPItem hpqspitem : hpqspitems) {
-	            //System.out.format("Parent=%s, Id=%s",
-	            //       dislikeitem.getParent(), dislikeitem.getId());
-	        	hpqsps.add(hpqspitem);
-	        }
-			return hpqsps;
-		}
-	}
-
-	// if hostname combined, then all HPs (including this one) are included.
-	// This HP, then, necessarily has no significant QSPs and "www.example.com/page.html?" is returned as the HPQSPItem.
-	// Note: Setting a hostname to separated, adding a significant qsp, then going back to hostname combined is not supported.
-	// 		In that case, the re-combined hostname would have many hps (including this one) and each HP could have lots of HPQSPs 
-	
-	// if hostname separated, then this HP is the only HP for that hostname
-	// In that case, 1 of two things is true:
-	// 1. The HP has no significant QSPs and "www.example.com/page.html?" is returned as the HPQSPItem.
-	// 2. The HP has sigificant QSPs and "www.example.com/page.html?article=blah" is returned as the HPQSPItem.
-	
-	// NOTE: The hostname combined and separated-option1 are the same, as far as this class is concerned.
-	
-	@DynamoDBIgnore
-	public TreeSet<HPQSPItem> getRelevantHPQSPs(String inc_url, WordsMapper mapper, DynamoDBMapperConfig dynamo_config) 
-	{
-		// for now, just return all of them
-		if(getSignificantQSPs() == null) // 
-		{
-			return getHPQSPs(mapper, dynamo_config);
-		}
-		else // then there should be only one HPQSP to return. We know there's a significant QSP, and we have the URL.
-		{
-			String target_hpqsp_string = getHPQSPAccordingToThisHP(inc_url);
-			//System.out.println("target_hpqsp_string=" + target_hpqsp_string);
-			TreeSet<HPQSPItem> returnitems = new TreeSet<HPQSPItem>();
-			HPQSPItem hi = mapper.load(HPQSPItem.class, target_hpqsp_string, dynamo_config);
-			if(hi == null)
-				return null;
-			else
-			{
-				returnitems.add(hi);
-				return returnitems;
-			}
-		}
-	}
-
-	@DynamoDBIgnore
-	public String getReducedOriginalURL()
-	{
-		return getHPQSPAccordingToThisHP(original_url);
-	}
-
-	
-	@DynamoDBIgnore
-	
 	// do these return alphabetized?
-	public String getHPQSPAccordingToThisHP(String inc_url) // should be called getHPQSPAccordingToThisHP(url)?
+	@DynamoDBIgnore
+	public String getHPQSPStringAccordingToThisHP(String inc_url) // should be called getHPQSPAccordingToThisHP(url)?
 	{
 		//System.out.println("HPItem.getHPQSPAccordingToThisHP(url): entering");
 		String hpqsp_string_according_to_this_hp = null;

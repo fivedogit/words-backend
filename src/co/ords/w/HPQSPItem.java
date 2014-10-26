@@ -182,7 +182,7 @@ public class HPQSPItem implements java.lang.Comparable<HPQSPItem> {
 	}
 
 	@DynamoDBIgnore // this somewhat duplicates the above function, but is faster since we're not trying to get all the comments, just a count.
-	public int getNumHPQSPLikes(int minutes_ago, WordsMapper mapper, DynamoDBMapperConfig dynamo_config) 
+	public long getNumberOfHPQSPLikes(int minutes_ago, WordsMapper mapper, DynamoDBMapperConfig dynamo_config) 
 	{ 
 		// set up an expression to query screename#id
         DynamoDBQueryExpression<HPQSPLikeItem> queryExpression = new DynamoDBQueryExpression<HPQSPLikeItem>()
@@ -215,7 +215,7 @@ public class HPQSPItem implements java.lang.Comparable<HPQSPItem> {
         if(items != null && items.size() > 0)
         	return items.size();
         else
-        	return 0;
+        	return 0L;
 	}
 	
 	@DynamoDBIgnore

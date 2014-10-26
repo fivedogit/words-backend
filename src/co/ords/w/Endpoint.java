@@ -65,7 +65,7 @@ public class Endpoint extends HttpServlet {
 	private AmazonDynamoDBClient client;
 	private WordsMapper mapper;
 	private DynamoDBMapperConfig dynamo_config;
-	private boolean devel = true;
+	private boolean devel = false;
 	GlobalvarItem imp_source_categories_gvi = null; // would otherwise be polled on every new impression
 	GlobalvarItem imp_targets_gvi = null; // would otherwise be polled on every new impression
 	
@@ -329,13 +329,59 @@ public class Endpoint extends HttpServlet {
 				 */
 				if(method.equals("searchForHNItem"))
 				{
-					 String url_str = request.getParameter("url");
-					 String result = Jsoup
-							 .connect("https://hn.algolia.com/api/v1/search").data("query", url_str).data("tags","story")
-							 .userAgent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/38.0.2125.104 Safari/537.36")
-							 .ignoreContentType(true).execute().body();
-					 jsonresponse.put("response_status", "success");
-					 jsonresponse.put("result", new JSONObject(result));
+					String url_str = request.getParameter("url");
+					String mode = request.getParameter("mode"); // "stealth", "active"
+					if(url_str != null && !url_str.isEmpty())
+					{
+						HNStory hn_story = mapper.load(HNStory.class, url_str, dynamo_config);
+						if(hn_story != null)
+						{
+							jsonresponse.put("response_status", "success");
+							jsonresponse.put("objectID", hn_story.getId());
+						}
+						else
+						{
+							boolean found_object = false;
+							if(mode != null && mode.equals("active"))
+							{	
+								String result = Jsoup
+										.connect("https://hn.algolia.com/api/v1/search").data("query", url_str).data("tags","story")
+										.userAgent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/38.0.2125.104 Safari/537.36")
+										.ignoreContentType(true).execute().body();
+								
+								JSONObject response_jo = new JSONObject(result);
+								JSONArray hits_ja = response_jo.getJSONArray("hits");
+								String objectID = "";
+								
+								for(int x = 0; x < hits_ja.length() && found_object == false; x++)
+				        		{	
+				        			if(hits_ja.getJSONObject(x).getString("url").equals(url_str))
+				        			{
+				        				jsonresponse.put("response_status", "success");
+				        				objectID = hits_ja.getJSONObject(x).getString("objectID");
+										jsonresponse.put("objectID", objectID);
+										hn_story = new HNStory();
+										hn_story.setURL(url_str);
+										hn_story.setId(objectID);
+										mapper.save(hn_story);
+										found_object = true;
+				        			}
+				        		}
+							}
+							
+							// nothing found for this URL, either natively or on Algolia
+							if(!found_object)
+							{	
+								jsonresponse.put("response_status", "success");
+								jsonresponse.put("objectID", "-1");
+							}
+						}
+					}
+					else
+					{
+						jsonresponse.put("response_status", "error");
+						jsonresponse.put("message", "Invalid \"url\" parameter.");	
+					}
 				}
 				else if(method.equals("getHNAuthToken"))
 				{
@@ -2647,6 +2693,17 @@ public class Endpoint extends HttpServlet {
 														 }
 													 }
 												 }
+											 }
+											 else if(which.equals("urlcheckingmode")) // NOTE: THIS SETS WHICH_PICTURE TO "avatar_icon" AUTOMATICALLY (prevents 2 calls)
+											 {
+												 if(value.equals("notifications_only"))
+													 useritem.setURLCheckingMode("notifications_only");
+												 else if(value.equals("active"))
+													 useritem.setURLCheckingMode("active");
+												 else // this is an error, default to 450
+													 useritem.setURLCheckingMode("stealth");
+												 mapper.save(useritem);
+												 jsonresponse.put("response_status", "success"); 
 											 }
 											 else
 											 {

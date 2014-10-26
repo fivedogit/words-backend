@@ -102,6 +102,7 @@ public class UserItem implements java.lang.Comparable<UserItem> {
 	private String last_ip_address;
 	private int hn_karma;
 	private long hn_since;
+	private String url_checking_mode;
 	
 	// dynamic parts (not in the database entry itself). NOTE: these can differ based on window size (or no window at all)
 	private TreeSet<CommentItem> comments_authored;
@@ -389,6 +390,10 @@ public class UserItem implements java.lang.Comparable<UserItem> {
 	@DynamoDBAttribute(attributeName="hn_karma")  
 	public int getHNKarma() { return hn_karma; }
 	public void setHNKarma(int hn_karma) { this.hn_karma = hn_karma; }
+	
+	@DynamoDBAttribute(attributeName="url_checking_mode")  
+	public String getURLCheckingMode() {return url_checking_mode; }  
+	public void setURLCheckingMode(String url_checking_mode) { this.url_checking_mode = url_checking_mode; }
 	
 	@DynamoDBIgnore
 	public boolean isCurrentPassword(String password_to_test)
@@ -686,6 +691,10 @@ public class UserItem implements java.lang.Comparable<UserItem> {
 			user_jo.put("num_likes_authored_in_window", getNumLikesAuthoredInWindow());
 			user_jo.put("num_dislikes_authored_in_window", getNumDislikesAuthoredInWindow());
 			user_jo.put("num_comments_authored_in_window", getNumCommentsAuthoredInWindow());
+			if(getURLCheckingMode() == null || getURLCheckingMode().isEmpty())
+				user_jo.put("url_checking_mode", "stealth");
+			else
+				user_jo.put("url_checking_mode", getURLCheckingMode());
 			
 			user_jo.put("since", getSince());
 			user_jo.put("since_hr", sdf.format(getSince()));

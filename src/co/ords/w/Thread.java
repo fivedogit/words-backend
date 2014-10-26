@@ -130,22 +130,36 @@ public class Thread {
 					//System.out.println("Thread(): onlyhp=" + onlyhpitem.getHP());
 					hps = new TreeSet<HPItem>();
 					hps.add(onlyhpitem);
-					hpqsps = onlyhpitem.getRelevantHPQSPs(inc_url, mapper, dynamo_config);
+					String hpqsp_string = onlyhpitem.getHPQSPStringAccordingToThisHP(inc_url);
+					HPQSPItem onlyhpqspitem = mapper.load(HPQSPItem.class, hpqsp_string, dynamo_config);
+					if(onlyhpqspitem != null)
+					{
+						numlikes = onlyhpqspitem.getNumberOfHPQSPLikes(0, inc_mapper, inc_dynamo_config);
+						hpqsps = new TreeSet<HPQSPItem>();
+						hpqsps.add(onlyhpqspitem); // onlyhpitem.getRelevantHPQSPs(inc_url, mapper, dynamo_config);
+					}
+					else
+						numlikes = 0L;
 				}
 				
-				//is this right? Why are we looping? Shouldn't it just be one hpqsp?
+				// is this right? Why are we looping? Shouldn't it just be one hpqsp?
+				// A: Yes, it's just one item, but since the "combined" section below could have multiples, this class has a set of hpqsps as a private variable. 
+				// A (cont): Hence, the appearance, here, of multiples when there can be only one at this point.
 				if(hpqsps != null) 
 				{
 					//System.out.println("Thread(): hpqsps was not null. Does it have comments?");
-					Iterator<HPQSPItem> hpqsps_it = hpqsps.iterator();
+					HPQSPItem currenthpqsp = hpqsps.first();
+					/*Iterator<HPQSPItem> hpqsps_it = hpqsps.iterator();
 					HPQSPItem currenthpqsp = null;
 					toplevelcomments = new TreeSet<CommentItem>();
 					allcomments = new TreeSet<CommentItem>();
 					while(hpqsps_it.hasNext())
 					{
-						currenthpqsp = hpqsps_it.next();
+						currenthpqsp = hpqsps_it.next();*/
 						if(currenthpqsp != null)
 						{
+							toplevelcomments = new TreeSet<CommentItem>();
+							allcomments = new TreeSet<CommentItem>();
 							TreeSet<CommentItem> hpqsp_toplevelcomments = currenthpqsp.getTopLevelComments(525949, mapper, dynamo_config); // one year in minutes
 							if(hpqsp_toplevelcomments != null)
 								toplevelcomments.addAll(hpqsp_toplevelcomments);
@@ -153,7 +167,7 @@ public class Thread {
 							if(hpqsp_allcomments != null)
 								allcomments.addAll(hpqsp_allcomments);
 						}
-					}
+					//}
 				}
 				
 			}
@@ -359,23 +373,31 @@ public class Thread {
 				String sd =  Global.getStandardizedHostnameFromURL(original_url);
 				jsonresponse.put("significant_designation", sd);
 				jsonresponse.put("threadviews", getThreadViews(sd,0));
+				jsonresponse.put("numlikes", numlikes);
+				if(allcomments != null)
+					jsonresponse.put("numcomments", allcomments.size());
+				else
+					jsonresponse.put("numcomments", 0);
 				jsonresponse.put("hostname", Global.getStandardizedHostnameFromURL(original_url));
 				jsonresponse.put("hp", Global.getStandardizedHPFromURL(original_url));
 				//jsonresponse.put("hpqsp", Global.getStandardizedHPQSPFromURL(original_url));
 				return jsonresponse;
 			}
 
+			if(allcomments != null)
+				jsonresponse.put("numcomments", allcomments.size());
+			else
+				jsonresponse.put("numcomments", 0);
+			
 			if(toplevelcomments != null && !toplevelcomments.isEmpty())
 			{
 				JSONArray master_comment_array = new JSONArray();
 				master_comment_array = getTopLevelCommentIds(); // just return the comment ids, no children, no fluff
 				jsonresponse.put("children", master_comment_array);
 				JSONObject tempjo = getTopAndBottom();
-				jsonresponse.put("numcomments", allcomments.size());
 				jsonresponse.put("top", tempjo.getString("top"));
 				jsonresponse.put("bottom", tempjo.getString("bottom"));
 			}
-
 
 			if(!hostnameitem.getSeparated())
 			{
@@ -391,7 +413,7 @@ public class Thread {
 				{ 
 					//System.out.println("Separated hostname hps is not null and not empty. Getting hpqspaccordingtoHP as sigdef from url=" + original_url);
 					HPItem onlyhp = hps.iterator().next(); 
-					String sd = onlyhp.getHPQSPAccordingToThisHP(original_url);
+					String sd = onlyhp.getHPQSPStringAccordingToThisHP(original_url);
 					jsonresponse.put("significant_designation", sd);
 					jsonresponse.put("threadviews", getThreadViews(sd,0));
 				}
@@ -404,6 +426,7 @@ public class Thread {
 				}
 			}
 			//System.out.println("Thread.getJSONObjectRepresentation(): adding hostname, hp, std_url and original_url to response object." + original_url);
+			jsonresponse.put("numlikes", numlikes);
 			jsonresponse.put("hostname", Global.getStandardizedHostnameFromURL(original_url));
 			jsonresponse.put("hp", Global.getStandardizedHPFromURL(original_url));
 			jsonresponse.put("original_url", original_url);

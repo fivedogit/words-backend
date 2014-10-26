@@ -774,7 +774,7 @@ public class WordsCore {
 		// and all the comments that were previously attached to www.youtube.com/watch? are divvied up by their original_url value and assigned a new hpqsp value
 		// comments' parents = www.youtube.com/watch?v=weezervid, www.youtube.com/watch?v=ninvid, www.youtube.com/watch?v=politicalvid
 		
-		String hpqsp_str = hpitem.getHPQSPAccordingToThisHP(url);
+		String hpqsp_str = hpitem.getHPQSPStringAccordingToThisHP(url);
 		//System.out.println("hpqsp_str just before comment creation =" + hpqsp_str);
 		HPQSPItem hpqspitem = mapper.load(HPQSPItem.class, hpqsp_str, dynamo_config);
 		// if necessary, create hpqsp and add to hp
@@ -1176,8 +1176,8 @@ public class WordsCore {
    							mapper.save(hpitem);
    					 }
    					
-   					 String hpqsp_str = hpitem.getHPQSPAccordingToThisHP(url); // it was a valid URL above (for hostname), so we know this is valid here as well
-   					 HPQSPItem hpqspitem = mapper.load(HPQSPItem.class, hpitem.getHPQSPAccordingToThisHP(url), dynamo_config);
+   					 String hpqsp_str = hpitem.getHPQSPStringAccordingToThisHP(url); // it was a valid URL above (for hostname), so we know this is valid here as well
+   					 HPQSPItem hpqspitem = mapper.load(HPQSPItem.class, hpitem.getHPQSPStringAccordingToThisHP(url), dynamo_config);
    					 boolean user_has_already_liked = true;
    					 if(hpqspitem == null) // hp existed, but HPQSP did not. Create it.
    					 {
