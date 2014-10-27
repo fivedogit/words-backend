@@ -1,0 +1,56 @@
+words_comments
+	id
+	hpqsp-msfe
+	author_id-msfe
+	hostname-msfe
+	parent-msfe
+words_dislikes
+	id
+	author_id-msfe
+	author_id-parent
+	parent
+words_follows
+	significant_designation-user_id
+words_globalvars
+	name
+words_hnstories
+	url
+words_hostnamelikes2
+	id
+	author_id-msfe
+	hostname-msfe
+	author_id-hostname
+words_hostnames
+	hostname
+words_hpqsplikes2
+	id
+	hpqsp-msfe
+	hostname-msfe
+	author_id-msfe
+	author_id-hpqsp
+words_hpqsps
+	hpqsp
+	hostname
+	hp
+words_hps
+	hp
+	hostname
+words_impressions
+	id
+words_likes
+	id
+	author_id-msfe
+	author_id-parent
+	parent
+words_metrics
+	id
+words_threadviews
+	id
+	significant_designation-msfe
+words_user_tokens
+	screenname
+words_users2
+	id
+	email
+	screenname
+	
